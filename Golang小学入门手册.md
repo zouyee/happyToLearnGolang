@@ -295,7 +295,406 @@ func main() {
 
 ​	**类型推导**
 
-​	在定义一个变量却不显示指定其类型时
+​	在定义一个变量却不显示指定其类型时（使用 `:=` 语法或者 `var =` 表达式语法）， 变量的类型由（等号）右侧的值推导得出。
+
+当右值定义了类型时，新变量的类型与其相同：
+
+```
+var i int
+j := i // j 也是一个 int
+```
+
+但是当右边包含了未指名类型的数字常量时，新的变量就可能是 `int` 、 `float64` 或 `complex128` 。 这取决于常量的精度：
+
+```
+i := 42           // int
+f := 3.142        // float64
+g := 0.867 + 0.5i // complex128
+```
+
+尝试修改演示代码中 `v` 的初始值，并观察这是如何影响其类型的。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	v := 42 // change me!
+	fmt.Printf("v is of type %T\n", v)
+}
+```
+
+​	**常量**
+
+​	常量的定义与变量类似，只不过使用 `const` 关键字。
+
+​	常量可以是字符、字符串、布尔或数字类型的值。
+
+​	常量不能使用 `:=` 语法定义。
+
+```go
+package main
+
+import "fmt"
+
+const Pi = 3.14
+
+func main() {
+	const World = "世界"
+	fmt.Println("Hello", World)
+	fmt.Println("Happy", Pi, "Day")
+
+	const Truth = true
+	fmt.Println("Go rules?", Truth)
+}
+```
+
+​	**数值常量**
+
+​	数值常量是高精度的 *值* 。
+
+​	一个未指定类型的常量由上下文来决定其类型。
+
+​	也尝试一下输出 `needInt(Big)` 吧。
+
+​	（`int` 可以存放最大64位的整数，根据平台不同有时会更少。）
+
+```go
+package main
+
+import "fmt"
+
+const (
+	Big   = 1 << 100
+	Small = Big >> 99
+)
+
+func needInt(x int) int { return x*10 + 1 }
+func needFloat(x float64) float64 {
+	return x * 0.1
+}
+
+func main() {
+	fmt.Println(needInt(Small))
+	fmt.Println(needFloat(Small))
+	fmt.Println(needFloat(Big))
+}
+```
+
+##### 1.3 流程控制##
+
+###### 	1.3.1 for循环##
+
+​	Go 只有一种循环结构—— `for` 循环。
+
+基本的 `for` 循环包含三个由分号分开的组成部分：
+
+- 初始化语句：在第一次循环执行前被执行
+- 循环条件表达式：每轮迭代开始前被求值
+- 后置语句：每轮迭代后被执行
+
+初始化语句一般是一个短变量声明，这里声明的变量仅在整个 `for` 循环语句可见。
+
+如果条件表达式的值变为 `false`，那么迭代将终止。
+
+*注意*：不像 C，Java，或者 Javascript 等其他语言，`for` 语句的三个组成部分 并不需要用括号括起来，但循环体必须用 `{ }` 括起来。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	sum := 0
+	for i := 0; i < 10; i++ {
+		sum += i
+	}
+	fmt.Println(sum)
+}
+```
+
+循环初始化语句和后置语句都是可选的。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	sum := 1
+	for ; sum < 1000; {
+		sum += sum
+	}
+	fmt.Println(sum)
+}
+```
+
+C 的 `while` 在 Go 中叫做 `for` 。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	sum := 1
+	for sum < 1000 {
+		sum += sum
+	}
+	fmt.Println(sum)
+}
+```
+
+如果省略了循环条件，循环就不会结束，因此可以用更简洁地形式表达死循环。
+
+```go
+package main
+
+func main() {
+	for {
+	}
+}
+```
+
+
+
+###### 1.3.2 if判断##
+
+就像 `for` 循环一样，Go 的 `if` 语句也不要求用 `( )` 将条件括起来，同时， `{ }` 还是必须有的。
+
+```go
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+func sqrt(x float64) string {
+	if x < 0 {
+		return sqrt(-x) + "i"
+	}
+	return fmt.Sprint(math.Sqrt(x))
+}
+
+func main() {
+	fmt.Println(sqrt(2), sqrt(-4))
+}
+```
+
+跟 `for` 一样， `if` 语句可以在条件之前执行一个简单语句。
+
+由这个语句定义的变量的作用域仅在 `if` 范围之内。
+
+（在最后的 `return` 语句处使用 `v` 看看。）
+
+```go
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+func pow(x, n, lim float64) float64 {
+	if v := math.Pow(x, n); v < lim {
+		return v
+	}
+	return lim
+}
+
+func main() {
+	fmt.Println(
+		pow(3, 2, 10),
+		pow(3, 3, 20),
+	)
+}
+```
+
+在 `if` 的便捷语句定义的变量同样可以在任何对应的 `else` 块中使用。
+
+（提示：两个 `pow` 调用都在 `main` 调用 `fmt.Println` 前执行完毕了。）
+
+```go
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+func pow(x, n, lim float64) float64 {
+	if v := math.Pow(x, n); v < lim {
+		return v
+	} else {
+		fmt.Printf("%g >= %g\n", v, lim)
+	}
+	// 这里开始就不能使用 v 了
+	return lim
+}
+
+func main() {
+	fmt.Println(
+		pow(3, 2, 10),
+		pow(3, 3, 20),
+	)
+}
+```
+
+作为练习函数和循环的简单途径，用牛顿法实现开方函数。
+
+在这个例子中，牛顿法是通过选择一个初始点 *z* 然后重复这一过程求 `Sqrt(x)` 的近似值：
+
+$z=z-(z^2 -x)/2z$
+
+为了做到这个，只需要重复计算 10 次，并且观察不同的值（1，2，3，……）是如何逐步逼近结果的。 然后，修改循环条件，使得当值停止改变（或改变非常小）的时候退出循环。观察迭代次数是否变化。结果与 [math.Sqrt](https://go-zh.org/pkg/math/#Sqrt) 接近吗？
+
+提示：定义并初始化一个浮点值，向其提供一个浮点语法或使用转换：
+
+```
+z := float64(1)
+z := 1.0
+```
+
+
+
+###### 1.3.3 switch语句##
+
+​	`switch` 语句除非以 `fallthrough` 语句结束，否则分支会自动终止。
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func main() {
+	fmt.Print("Go runs on ")
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		fmt.Println("OS X.")
+	case "linux":
+		fmt.Println("Linux.")
+	default:
+		// freebsd, openbsd,
+		// plan9, windows...
+		fmt.Printf("%s.", os)
+	}
+}
+```
+
+switch 的条件从上到下的执行，当匹配成功的时候停止。
+
+（例如，
+
+```
+switch i {
+case 0:
+case f():
+}
+```
+
+当 `i==0` 时不会调用 `f` 。）
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	fmt.Println("When's Saturday?")
+	today := time.Now().Weekday()
+	switch time.Saturday {
+	case today + 0:
+		fmt.Println("Today.")
+	case today + 1:
+		fmt.Println("Tomorrow.")
+	case today + 2:
+		fmt.Println("In two days.")
+	default:
+		fmt.Println("Too far away.")
+	}
+}
+```
+
+没有条件的 switch 同 `switch true` 一样。
+
+这一构造使得可以用更清晰的形式来编写长的 if-then-else 链。
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	t := time.Now()
+	switch {
+	case t.Hour() < 12:
+		fmt.Println("Good morning!")
+	case t.Hour() < 17:
+		fmt.Println("Good afternoon.")
+	default:
+		fmt.Println("Good evening.")
+	}
+}
+```
+
+
+
+###### 1.3.4 defer语句
+
+​	defer 语句会延迟函数的执行直到上层函数返回。延迟调用的参数会立刻生成，但是在上层函数返回前函数都不会被调用。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	defer fmt.Println("world")
+
+	fmt.Println("hello")
+}
+```
+
+延迟的函数调用被压入一个栈中。当函数返回时， 会按照后进先出的顺序调用被延迟的函数调用。
+
+阅读[博文](http://blog.go-zh.org/defer-panic-and-recover)了解更多关于 `defer` 语句的信息。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("counting")
+
+	for i := 0; i < 10; i++ {
+		defer fmt.Println(i)
+	}
+
+	fmt.Println("done")
+}
+```
+
+
+
+##### 1.4 复杂类型####
+
+​	
+
+
+
+
 
 
 
