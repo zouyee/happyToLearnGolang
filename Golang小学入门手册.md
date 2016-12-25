@@ -714,7 +714,7 @@ fmt.Println(*p) // 通过指针 p 读取 i
 *p = 21         // 通过指针 p 设置 i
 ```
 
-​	这也就是通常所说的“间接引用”或“非直接引用”，与 C 不同，Go 没有指针运算。
+​	这也就是通常所说的“间接引用”或“非直接引用”，－－与 C 不同，Go 没有指针运算。
 
 ```go
 package main
@@ -735,9 +735,296 @@ func main() {
 }
 ```
 
+###### 	1.4.2 结构体
+
+​	一个结构体（struct）就是一个字段的集合，type的含义跟其字面意思相符。
+
+```go
+package main
+
+import "fmt"
+
+type Vertex struct {
+	X int
+	Y int
+}
+
+func main() {
+	fmt.Println(Vertex{1, 2})
+}
+```
+
+​	结构体字段使用点号来访问。
+
+```go
+package main
+
+import "fmt"
+
+type Vertex struct {
+	X int
+	Y int
+}
+
+func main() {
+	v := Vertex{1, 2}
+	v.X = 4
+	fmt.Println(v.X)
+}
+```
+
+​	结构体字段可以通过结构体指针来访问，通过指针间接的访问是透明的。
+
+```go
+package main
+
+import "fmt"
+
+type Vertex struct {
+	X int
+	Y int
+}
+
+func main() {
+	v := Vertex{1, 2}
+	p := &v
+	p.X = 1e9
+	fmt.Println(v)
+}
+```
+
+​	结构体文法表示通过结构体字段的值作为列表来分配一个结构体。
+
+​	使用Name:语法可以仅列出部分字段。（字段名的顺序无关）
+
+​	特殊的前缀＆返回一个指向结构体的指针	。
+
+```go
+package main
+
+import "fmt"
+
+type Vertex struct {
+	X, Y int
+}
+
+var (
+	v1 = Vertex{1, 2}  // 类型为 Vertex
+	v2 = Vertex{X: 1}  // Y:0 被省略
+	v3 = Vertex{}      // X:0 和 Y:0
+	p  = &Vertex{1, 2} // 类型为 *Vertex
+)
+
+func main() {
+	fmt.Println(v1, p, v2, v3)
+}
+```
+
+###### 	1.4.3 数组
+
+​	类型[n]T是一个有n个类型为T的值的数组。
+
+​	表达式：
+
+​	`var a[10]int`
+
+​	定义变量a是一个有十个整数的数组。
+
+​	数组的长度是其类型的一部分，因此数组不能改变大小。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var a [2]string
+	a[0] = "Hello"
+	a[1] = "World"
+	fmt.Println(a[0], a[1])
+	fmt.Println(a)
+}
+```
+
+###### 	1.4.4 slice
+
+​	一个slice会指向一个序列的值，并且包含了长度信息。
+
+​	[]T是一个元素类型为T的slice。
+
+​	len(s)返回slice s的长度。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	s := []int{2, 3, 5, 7, 11, 13}
+	fmt.Println("s ==", s)
+
+	for i := 0; i < len(s); i++ {
+		fmt.Printf("s[%d] == %d\n", i, s[i])
+	}
+}
+```
+
+​	slice可以包含任意的类型，包括另一个slice。
+
+```go
+package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+func main() {
+	// Create a tic-tac-toe board.
+	game := [][]string{
+		[]string{"_", "_", "_"},
+		[]string{"_", "_", "_"},
+		[]string{"_", "_", "_"},
+	}
+
+	// The players take turns.
+	game[0][0] = "X"
+	game[2][2] = "O"
+	game[2][0] = "X"
+	game[1][0] = "O"
+	game[0][2] = "X"
+
+	printBoard(game)
+}
+
+func printBoard(s [][]string) {
+	for i := 0; i < len(s); i++ {
+		fmt.Printf("%s\n", strings.Join(s[i], " "))
+	}
+}
+```
+
+​	slice可以重新切片，创建一个新的slice值指向相同的数组。
+
+​	表达式：
+
+​	`s[lo:hi]`
+
+​	表示从lo到hi-1的ｓｌｉｃｅ元素，含前端，不包含后端，因此
+
+​	`s[lo:lo]`
+
+​	是空的，而`s[lo:lo+1]`有一个元素。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	s := []int{2, 3, 5, 7, 11, 13}
+	fmt.Println("s ==", s)
+	fmt.Println("s[1:4] ==", s[1:4])
+
+	// 省略下标代表从 0 开始
+	fmt.Println("s[:3] ==", s[:3])
+
+	// 省略上标代表到 len(s) 结束
+	fmt.Println("s[4:] ==", s[4:])
+}
+```
+
+​	slice由函数make创建，这会分配一个全是零值的数组并且返回一个slice指向这个数组：
+
+​	`a := make([]int, 5) // len(a) = 5`
+
+​	为了指定容量，可传递第三个参数到make：
+
+```go
+b := make([]int, 0, 5) //len(b) = 0, cap(b) = 5
+b = b[:cap(b)] //len(b) = 5, cap(b) = 5
+b = b[1:] // len(b) = 4, cap(b) = 4
+```
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	a := make([]int, 5)
+	printSlice("a", a)
+	b := make([]int, 0, 5)
+	printSlice("b", b)
+	c := b[:2]
+	printSlice("c", c)
+	d := c[2:5]
+	printSlice("d", d)
+}
+
+func printSlice(s string, x []int) {
+	fmt.Printf("%s len=%d cap=%d %v\n",
+		s, len(x), cap(x), x)
+}
+```
+
+slice的零值是nil。一个nil的slice的长度和容量是0。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var z []int
+	fmt.Println(z, len(z), cap(z))
+	if z == nil {
+		fmt.Println("nil!")
+	}
+}
+```
+
+向slice的末尾添加元素是一种常见的操作，因此Go提供了一个内建函数append。内建函数的文档对append做了详细解释。
+
+`func append(s []T, vs ...T)[]T`
+
+append的第一个参数是一个元素类型为T的slice，其余类型为T的值将会附件到该slice的末尾。
+
+append的结果是一个包含原slice所有元素加上新添加元素的slice。
+
+如果s的底层数组太小，而不能容纳所有值时，会分配一个更大的数组。返回的slice会指向这个新分配的数组。（了解更多关于 slice 的内容，参阅文章[Go 切片：用法和本质](https://blog.go-zh.org/go-slices-usage-and-internals)。）
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var a []int
+	printSlice("a", a)
+
+	// append works on nil slices.
+	a = append(a, 0)
+	printSlice("a", a)
+
+	// the slice grows as needed.
+	a = append(a, 1)
+	printSlice("a", a)
+
+	// we can add more than one element at a time.
+	a = append(a, 2, 3, 4)
+	printSlice("a", a)
+}
+
+func printSlice(s string, x []int) {
+	fmt.Printf("%s len=%d cap=%d %v\n",
+		s, len(x), cap(x), x)
+}
+```
 
 
-​	
+
+
 
 
 
