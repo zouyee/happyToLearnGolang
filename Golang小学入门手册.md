@@ -1937,9 +1937,219 @@ func main() {
 }
 ```
 
+发送者可以 `close` 一个 channel 来表示再没有值会被发送了。接收者可以通过赋值语句的第二参数来测试 channel 是否被关闭：当没有值可以接收并且 channel 已经被关闭，那么经过
 
+```
+v, ok := <-ch
+```
 
+之后 `ok` 会被设置为 `false`。
 
+循环 `for i := range c` 会不断从 channel 接收值，直到它被关闭。
+
+*注意：* 只有发送者才能关闭 channel，而不是接收者。向一个已经关闭的 channel 发送数据会引起 panic。 *还要注意：* channel 与文件不同；通常情况下无需关闭它们。只有在需要告诉接收者没有更多的数据的时候才有必要进行关闭，例如中断一个 `range`。
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func fibonacci(n int, c chan int) {
+	x, y := 0, 1
+	for i := 0; i < n; i++ {
+		c <- x
+		x, y = y, x+y
+	}
+	close(c)
+}
+
+func main() {
+	c := make(chan int, 10)
+	go fibonacci(cap(c), c)
+	for i := range c {
+		fmt.Println(i)
+	}
+}
+```
+
+`select` 语句使得一个 goroutine 在多个通讯操作上等待。
+
+`select` 会阻塞，直到条件分支中的某个可以继续执行，这时就会执行那个条件分支。当多个都准备好的时候，会随机选择一个。
+
+```go
+package main
+
+import "fmt"
+
+func fibonacci(c, quit chan int) {
+	x, y := 0, 1
+	for {
+		select {
+		case c <- x:
+			x, y = y, x+y
+		case <-quit:
+			fmt.Println("quit")
+			return
+		}
+	}
+}
+
+func main() {
+	c := make(chan int)
+	quit := make(chan int)
+	go func() {
+		for i := 0; i < 10; i++ {
+			fmt.Println(<-c)
+		}
+		quit <- 0
+	}()
+	fibonacci(c, quit)
+}
+```
+
+`select` 语句使得一个 goroutine 在多个通讯操作上等待。
+
+`select` 会阻塞，直到条件分支中的某个可以继续执行，这时就会执行那个条件分支。当多个都准备好的时候，会随机选择一个。
+
+```go
+package main
+
+import "fmt"
+
+func fibonacci(c, quit chan int) {
+	x, y := 0, 1
+	for {
+		select {
+		case c <- x:
+			x, y = y, x+y
+		case <-quit:
+			fmt.Println("quit")
+			return
+		}
+	}
+}
+
+func main() {
+	c := make(chan int)
+	quit := make(chan int)
+	go func() {
+		for i := 0; i < 10; i++ {
+			fmt.Println(<-c)
+		}
+		quit <- 0
+	}()
+	fibonacci(c, quit)
+}
+```
+
+当 `select` 中的其他条件分支都没有准备好的时候，`default` 分支会被执行。
+
+为了非阻塞的发送或者接收，可使用 `default` 分支：
+
+```
+select {
+case i := <-c:
+    // 使用 i
+default:
+    // 从 c 读取会阻塞
+}
+```
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	tick := time.Tick(100 * time.Millisecond)
+	boom := time.After(500 * time.Millisecond)
+	for {
+		select {
+		case <-tick:
+			fmt.Println("tick.")
+		case <-boom:
+			fmt.Println("BOOM!")
+			return
+		default:
+			fmt.Println("    .")
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+}
+```
+
+**练习**：等价二叉树
+
+可以用多种不同的二叉树的叶子节点存储相同的数列值。例如，这里有两个二叉树保存了序列 1，1，2，3，5，8，13。
+
+ ![tree](/home/zounengren/图片/tree.png)
+
+用于检查两个二叉树是否存储了相同的序列的函数在多数语言中都是相当复杂的。这里将使用 Go 的并发和 channel 来编写一个简单的解法。
+
+这个例子使用了 `tree` 包，定义了类型：
+
+```
+type Tree struct {
+    Left  *Tree
+    Value int
+    Right *Tree
+}
+```
+
+**1.** 实现 `Walk` 函数。
+
+**2.** 测试 `Walk` 函数。
+
+函数 `tree.New(k)` 构造了一个随机结构的二叉树，保存了值 `k`，`2k`，`3k`，...，`10k`。 创建一个新的 channel `ch` 并且对其进行步进：
+
+```
+go Walk(tree.New(1), ch)
+```
+
+然后从 channel 中读取并且打印 10 个值。应当是值 1，2，3，...，10。
+
+**3.** 用 `Walk` 实现 `Same` 函数来检测是否 `t1` 和 `t2` 存储了相同的值。
+
+**4.** 测试 `Same` 函数。
+
+`Same(tree.New(1), tree.New(1))` 应当返回 `true`，而 `Same(tree.New(1), tree.New(2))` 应当返回 `false`。
+
+```go
+package main
+
+import "golang.org/x/tour/tree"
+
+// Walk 步进 tree t 将所有的值从 tree 发送到 channel ch。
+func Walk(t *tree.Tree, ch chan int)
+
+// Same 检测树 t1 和 t2 是否含有相同的值。
+func Same(t1, t2 *tree.Tree) bool
+
+func main() {
+}
+```
+
+###### 	1.6.3 mutex
+
+​	我们已经看到 `channel` 用来在各个 goroutine 间进行通信是非常合适的了。
+
+但是如果我们并不需要通信呢？比如说，如果我们只是想保证在每个时刻，只有一个 goroutine 能访问一个共享的变量从而避免冲突？
+
+这里涉及的概念叫做 *互斥*，通常使用 _互斥锁_(mutex)_来提供这个限制。
+
+Go 标准库中提供了 [`sync.Mutex`](https://go-zh.org/pkg/sync/#Mutex) 类型及其两个方法：
+
+- `Lock`
+- `Unlock`
+
+我们可以通过在代码前调用 `Lock` 方法，在代码后调用 `Unlock` 方法来保证一段代码的互斥执行。 参见 `Inc` 方法。
+
+我们也可以用 `defer` 语句来保证互斥锁一定会被解锁。参见 `Value` 方法。
 
 
 
