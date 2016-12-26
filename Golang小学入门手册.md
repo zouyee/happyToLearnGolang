@@ -1,9 +1,196 @@
-###					一、Golang入门###
+###					一、Golang小学入门###
 
 ##### 1.1 Golang简介
 ​	Go是Google开发的一种编译型，可并行化，并具有垃圾回收功能的编程语言。
 ​	罗布·派克（Rob Pike）,罗伯特·格瑞史莫（Robert Griesemer），及肯·汤普逊于2007年9月开始设计Go语言，随后Ian Lance Taylor, Russ Cox加入项目中。Go语言是基于Inferno操作系统所开发的。Go语言于2009年11月正式宣布推出，成为开放源代码项目，并在Linux及Mac OS X平台上进行了实现，后追加Windows系统下的实现。
 ​	2015年，Golang的受欢迎程度急剧上升，随着一大批PaaS开源工具的兴起与流行，诸如docker、kubernetes等，开源社区的发展促进Golang的流行，Golang的高效等特性同样为开源软件的性能提供保障，两者相辅相成。
+
+###### 					1.1.1 格式化
+
+​	格式化问题总是充满了争议，但却始终没有形成统一的定论。虽说人们可以适应不同的编码风格， 但抛弃这种适应过程岂不更好？若所有人都遵循相同的编码风格，在这类问题上浪费的时间将会更少。 问题就在于如何实现这种设想，而无需冗长的语言风格规范。
+
+​	在Go中我们另辟蹊径，让机器来处理大部分的格式化问题。`gofmt` 程序（也可用 `go fmt`，它以包为处理对象而非源文件）将Go程序按照标准风格缩进、 对齐，保留注释并在需要时重新格式化。若你想知道如何处理一些新的代码布局，请尝试运行`gofmt`；若结果仍不尽人意，请重新组织你的程序（或提交有关 `gofmt` 的Bug），而不必为此纠结。
+
+​	举例来说，你无需花时间将结构体中的字段注释对齐，`gofmt` 将为你代劳。 假如有以下声明：
+
+```go
+type T struct {
+	name string // 对象名
+	value int // 对象值
+}
+```
+
+`gofmt` 会将它按列对齐为：
+
+```go
+type T struct {
+	name    string // 对象名
+	value   int    // 对象值
+}
+```
+
+标准包中所有的Go代码都已经用 `gofmt` 格式化过了。
+
+还有一些关于格式化的细节，它们非常简短：
+
+- 缩进
+
+  我们使用制表符（tab）缩进，`gofmt` 默认也使用它。在你认为确实有必要时再使用空格。
+
+- 行的长度
+
+  Go对行的长度没有限制。如果一行实在太长，也可进行折行并插入适当的tab缩进。
+
+- 括号
+
+  比起C和Java，Go所需的括号更少：控制结构（`if`、`for` 和 `switch`）在语法上并不需要圆括号。此外，操作符优先级处理变得更加简洁，因此`x<<8 + y<<16`正表述了空格符所传达的含义。
+
+
+  	
+
+###### 	1.1.2 注释
+
+​	Go语言支持C风格的块注释 `/* */` 和C++风格的行注释 `//`。 行注释更为常用，而块注释则主要用作包的注释，当然也可在禁用一大段代码时使用。
+
+  	`godoc` 既是一个程序，又是一个Web服务器，它对Go的源码进行处理，并提取包中的文档内容。 出现在顶级声明之前，且与该声明之间没有空行的注释，将与该声明一起被提取出来，作为该条目的说明文档。 这些注释的类型和风格决定了 `godoc` 生成的文档质量。
+
+ 	 每个包都应包含一段包注释，即放置在包子句前的一个块注释。对于包含多个文件的包， 包注释只需出现在其中的任一文件中即可。包注释应在整体上对该包进行介绍，并提供包的相关信息。 它将出现在 `godoc` 页面中的最上面，并为紧随其后的内容建立详细的文档。
+
+```go
+/*
+	regexp 包为正则表达式实现了一个简单的库。
+
+	该库接受的正则表达式语法为：
+
+	正则表达式:
+		串联 { '|' 串联 }
+	串联:
+		{ 闭包 }
+	闭包:
+		条目 [ '*' | '+' | '?' ]
+	条目:
+		'^'
+		'$'
+		'.'
+		字符
+		'[' [ '^' ] 字符遍历 ']'
+		'(' 正则表达式 ')'
+*/
+package regexp
+```
+
+若某个包比较简单，包注释同样可以简洁些。
+
+```
+// path 包实现了一些常用的工具，以便于操作用反斜杠分隔的路径.
+
+```
+
+注释无需进行额外的格式化，如用星号来突出等。生成的输出甚至可能无法以等宽字体显示， 因此不要依赖于空格对齐，`godoc` 会像 `gofmt` 那样处理好这一切。 注释是不会被解析的纯文本，因此像HTML或其它类似于 `_这样_` 的东西将按照 **原样** 输出，因此不应使用它们。`godoc` 所做的调整， 就是将已缩进的文本以等宽字体显示，来适应对应的程序片段。 [`fmt` 包](http://golang.org/pkg/fmt/)的注释就用了这种不错的效果。
+
+`godoc` 是否会重新格式化注释取决于上下文，因此必须确保它们看起来清晰易辨： 使用正确的拼写、标点和语句结构以及折叠长行等。
+
+在包中，任何顶级声明前面的注释都将作为该声明的文档注释。 在程序中，每个可导出（首字母大写）的名称都应该有文档注释。
+
+文档注释最好是完整的句子，这样它才能适应各种自动化的展示。 第一句应当以被声明的东西开头，并且是单句的摘要。
+
+```
+// Compile 用于解析正则表达式并返回，如果成功，则 Regexp 对象就可用于匹配所针对的文本。
+func Compile(str string) (regexp *Regexp, err error) {
+
+```
+
+若注释总是以名称开头，`godoc` 的输出就能通过 `grep` 变得更加有用。假如你记不住“Compile”这个名称，而又在找正则表达式的解析函数， 那就可以运行
+
+```
+$ godoc regexp | grep parse
+
+```
+
+若包中的所有文档注释都以“此函数…”开头，`grep` 就无法帮你记住此名称。 但由于每个包的文档注释都以其名称开头，你就能看到这样的内容，它能显示你正在寻找的词语。
+
+```
+$ godoc regexp | grep parse
+	Compile parses a regular expression and returns, if successful, a Regexp
+	parsed. It simplifies safe initialization of global variables holding
+	cannot be parsed. It simplifies safe initialization of global variables
+$
+
+```
+
+Go的声明语法允许成组声明。单个文档注释应介绍一组相关的常量或变量。 由于是整体声明，这种注释往往较为笼统。
+
+```
+// 表达式解析失败后返回错误代码。
+var (
+	ErrInternal      = errors.New("regexp: internal error")
+	ErrUnmatchedLpar = errors.New("regexp: unmatched '('")
+	ErrUnmatchedRpar = errors.New("regexp: unmatched ')'")
+	...
+)
+
+```
+
+即便是对于私有名称，也可通过成组声明来表明各项间的关系，例如某一组由互斥体保护的变量。
+
+```
+var (
+	countLock   sync.Mutex
+	inputCount  uint32
+	outputCount uint32
+	errorCount  uint32
+)
+```
+
+###### 	1.1.3 命名
+
+​	正如命名在其它语言中的地位，它在 Go 中同样重要。有时它们甚至会影响语义： 例如，某个名称在包外是否可见，就取决于其首个字符是否为大写字母。 因此有必要花点时间来讨论Go程序中的命名约定。
+
+​	**包名**
+
+当一个包被导入后，包名就会成了内容的访问器。在
+
+```
+import "bytes"
+
+```
+
+之后，被导入的包就能通过 `bytes.Buffer` 来引用了。 若所有人都以相同的名称来引用其内容将大有裨益， 这也就意味着包应当有个恰当的名称：其名称应该简洁明了而易于理解。按照惯例， 包应当以小写的单个单词来命名，且不应使用下划线或驼峰记法。`err` 的命名就是出于简短考虑的，因为任何使用该包的人都会键入该名称。 不必担心**引用次序**的冲突。包名就是导入时所需的唯一默认名称， 它并不需要在所有源码中保持唯一，即便在少数发生冲突的情况下， 也可为导入的包选择一个别名来局部使用。 无论如何，通过文件名来判定使用的包，都是不会产生混淆的。
+
+另一个约定就是包名应为其源码目录的基本名称。在 `src/pkg/encoding/base64` 中的包应作为 `"encoding/base64"` 导入，其包名应为 `base64`， 而非 `encoding_base64` 或 `encodingBase64`。
+
+包的导入者可通过包名来引用其内容，因此包中的可导出名称可以此来避免冲突。 （请勿使用 `import .` 记法，它可以简化必须在被测试包外运行的测试， 除此之外应尽量避免使用。）例如，`bufio` 包中的缓存读取器类型叫做 `Reader` 而非 `BufReader`，因为用户将它看做 `bufio.Reader`，这是个清楚而简洁的名称。 此外，由于被导入的项总是通过它们的包名来确定，因此 `bufio.Reader` 不会与 `io.Reader` 发生冲突。同样，用于创建 `ring.Ring` 的新实例的函数（这就是Go中的**构造函数**）一般会称之为 `NewRing`，但由于 `Ring` 是该包所导出的唯一类型，且该包也叫 `ring`，因此它可以只叫做 `New`，它跟在包的后面，就像 `ring.New`。使用包结构可以帮助你选择好的名称。
+
+另一个简短的例子是 `once.Do`，`once.Do(setup)` 表述足够清晰， 使用 `once.DoOrWaitUntilDone(setup)` 完全就是画蛇添足。 长命名并不会使其更具可读性。一份有用的说明文档通常比额外的长名更有价值。
+
+​	**property**
+
+​	Go并不对获取器（getter）和设置器（setter）提供自动支持。 你应当自己提供获取器和设置器，通常很值得这样做，但若要将 `Get` 放到获取器的名字中，既不符合习惯，也没有必要。若你有个名为 `owner` （小写，未导出）的字段，其获取器应当名为 `Owner`（大写，可导出）而非 `GetOwner`。大写字母即为可导出的这种规定为区分方法和字段提供了便利。 若要提供设置器方法，`SetOwner` 是个不错的选择。两个命名看起来都很合理：
+
+```
+owner := obj.Owner()
+if owner != user {
+	obj.SetOwner(user)
+}	
+```
+
+​	**接口名**
+
+​	按照约定，只包含一个方法的接口应当以该方法的名称加上-er后缀或类似的修饰来构造一个施动着名词，如 `Reader`、`Writer`、 `Formatter`、`CloseNotifier` 等。
+
+​	诸如此类的命名有很多，遵循它们及其代表的函数名会让事情变的简单。 `Read`、`Write`、`Close`、`Flush`、 `String` 等都具有典型的签名和意义。为避免冲突，请不要用这些名称为你的方法命名， 除非你明确知道它们的签名和意义相同。反之，若你的类型实现了的方法， 与一个众所周知的类型的方法拥有相同的含义，那就使用相同的命名。 请将字符串转换方法命名为 `String` 而非 `ToString`。
+
+​	
+
+
+
+
+
+
+
+
+
+
 
 ##### 1.2 包、变量和函数
 
@@ -2150,6 +2337,144 @@ Go 标准库中提供了 [`sync.Mutex`](https://go-zh.org/pkg/sync/#Mutex) 类
 我们可以通过在代码前调用 `Lock` 方法，在代码后调用 `Unlock` 方法来保证一段代码的互斥执行。 参见 `Inc` 方法。
 
 我们也可以用 `defer` 语句来保证互斥锁一定会被解锁。参见 `Value` 方法。
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+// SafeCounter 的并发使用是安全的。
+type SafeCounter struct {
+	v   map[string]int
+	mux sync.Mutex
+}
+
+// Inc 增加给定 key 的计数器的值。
+func (c *SafeCounter) Inc(key string) {
+	c.mux.Lock()
+	// Lock 之后同一时刻只有一个 goroutine 能访问 c.v
+	c.v[key]++
+	c.mux.Unlock()
+}
+
+// Value 返回给定 key 的计数器的当前值。
+func (c *SafeCounter) Value(key string) int {
+	c.mux.Lock()
+	// Lock 之后同一时刻只有一个 goroutine 能访问 c.v
+	defer c.mux.Unlock()
+	return c.v[key]
+}
+
+func main() {
+	c := SafeCounter{v: make(map[string]int)}
+	for i := 0; i < 1000; i++ {
+		go c.Inc("somekey")
+	}
+
+	time.Sleep(time.Second)
+	fmt.Println(c.Value("somekey"))
+}
+```
+
+**练习**：Web爬虫
+
+在这个练习中，将会使用 Go 的并发特性来并行执行 web 爬虫。
+
+修改 `Crawl` 函数来并行的抓取 URLs，并且保证不重复。
+
+*提示*：你可以用一个 map 来缓存已经获取的 URL，但是需要注意 map 本身并不是并发安全的！
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+type Fetcher interface {
+	// Fetch 返回 URL 的 body 内容，并且将在这个页面上找到的 URL 放到一个 slice 中。
+	Fetch(url string) (body string, urls []string, err error)
+}
+
+// Crawl 使用 fetcher 从某个 URL 开始递归的爬取页面，直到达到最大深度。
+func Crawl(url string, depth int, fetcher Fetcher) {
+	// TODO: 并行的抓取 URL。
+	// TODO: 不重复抓取页面。
+        // 下面并没有实现上面两种情况：
+	if depth <= 0 {
+		return
+	}
+	body, urls, err := fetcher.Fetch(url)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("found: %s %q\n", url, body)
+	for _, u := range urls {
+		Crawl(u, depth-1, fetcher)
+	}
+	return
+}
+
+func main() {
+	Crawl("http://golang.org/", 4, fetcher)
+}
+
+// fakeFetcher 是返回若干结果的 Fetcher。
+type fakeFetcher map[string]*fakeResult
+
+type fakeResult struct {
+	body string
+	urls []string
+}
+
+func (f fakeFetcher) Fetch(url string) (string, []string, error) {
+	if res, ok := f[url]; ok {
+		return res.body, res.urls, nil
+	}
+	return "", nil, fmt.Errorf("not found: %s", url)
+}
+
+// fetcher 是填充后的 fakeFetcher。
+var fetcher = fakeFetcher{
+	"http://golang.org/": &fakeResult{
+		"The Go Programming Language",
+		[]string{
+			"http://golang.org/pkg/",
+			"http://golang.org/cmd/",
+		},
+	},
+	"http://golang.org/pkg/": &fakeResult{
+		"Packages",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/cmd/",
+			"http://golang.org/pkg/fmt/",
+			"http://golang.org/pkg/os/",
+		},
+	},
+	"http://golang.org/pkg/fmt/": &fakeResult{
+		"Package fmt",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/pkg/",
+		},
+	},
+	"http://golang.org/pkg/os/": &fakeResult{
+		"Package os",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/pkg/",
+		},
+	},
+}
+```
+
+
 
 
 
